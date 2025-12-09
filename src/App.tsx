@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import ShotPutScene from './components/ShotPutScene';
+import FaceTracker from './components/FaceTracker';
 // import { powerToDistance } from './lib/expressionScore';
 
 const App: React.FC = () => {
@@ -29,6 +30,9 @@ const App: React.FC = () => {
 
   return (
     <div className="relative w-full h-screen overflow-hidden bg-black">
+      {/* Face Tracker Debug View */}
+      <FaceTracker />
+
       {/* 3D Scene Background */}
       <div className="absolute inset-0 z-0">
         <ShotPutScene power={power} onLand={handleLand} />
