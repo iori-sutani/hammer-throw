@@ -5,19 +5,22 @@ import { setupLighting, setupEnvironment, createMannequin, createHammer } from '
 type Props = { 
   power: number | null;
   onLand?: (distance: number) => void;
+  onThrow?: () => void;
 };
 
-const ShotPutScene: React.FC<Props> = ({ power, onLand }) => {
+const ShotPutScene: React.FC<Props> = ({ power, onLand, onThrow }) => {
   const mountRef = useRef<HTMLDivElement | null>(null);
   const hammerRef = useRef<THREE.Group | null>(null);
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
   const onLandRef = useRef(onLand);
+  const onThrowRef = useRef(onThrow);
   const characterRef = useRef<{ group: THREE.Group, rightArmGroup: THREE.Group, leftArmGroup: THREE.Group } | null>(null);
 
   // Update ref when prop changes
   useEffect(() => {
     onLandRef.current = onLand;
-  }, [onLand]);
+    onThrowRef.current = onThrow;
+  }, [onLand, onThrow]);
   
   // Physics state
   const physicsState = useRef({
@@ -160,6 +163,11 @@ const ShotPutScene: React.FC<Props> = ({ power, onLand }) => {
                physicsState.current.isAnimatingThrow = false;
                physicsState.current.isFlying = true;
                
+               // Trigger Throw Sound
+               if (onThrowRef.current) {
+                   onThrowRef.current();
+               }
+
                // Set initial velocity based on power
                const power = physicsState.current.throwPower;
                const angle = (40 * Math.PI) / 180;

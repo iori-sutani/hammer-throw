@@ -1,23 +1,44 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import ShotPutScene from './components/ShotPutScene';
 import FaceTracker from './components/FaceTracker';
+import { useSoundEffects } from './hooks/useSoundEffects';
 // import { powerToDistance } from './lib/expressionScore';
 
 const App: React.FC = () => {
   const [power, setPower] = useState<number | null>(null);
   const [distance, setDistance] = useState<number | null>(null);
   const [gameState, setGameState] = useState<'idle' | 'throwing' | 'result'>('idle');
+  const [currentFaceScore, setCurrentFaceScore] = useState<number>(0);
+
+  const { playPowerTone, stopPowerTone, playThrowSound, playLandSound } = useSoundEffects();
+
+  // Sound Effect for Power Charging
+  useEffect(() => {
+    if (gameState === 'idle') {
+      playPowerTone(currentFaceScore);
+    } else {
+      stopPowerTone();
+    }
+  }, [currentFaceScore, gameState, playPowerTone, stopPowerTone]);
 
   const throwBall = () => {
     setGameState('throwing');
     setDistance(null); // Reset distance display
-    // Simulate power calculation delay or just throw
-    // Hammer throw distances are much longer (World Record ~86m)
-    const p = Math.random() * 15 + 10; // 10 .. 25
+    // playThrowSound(); // Moved to onThrow callback in ShotPutScene
+    
+    // Use Face Score for Power
+    // Score is 0.0 to 1.0
+    // Min Power: 10, Max Power: 35 (World Record level)
+    const minPower = 10;
+    const maxPower = 35;
+    const p = minPower + (maxPower - minPower) * currentFaceScore;
+    
+    console.log(`Throwing with Score: ${currentFaceScore.toFixed(2)}, Power: ${p.toFixed(2)}`);
     setPower(p);
   };
 
   const handleLand = (d: number) => {
+    playLandSound();
     setDistance(d);
     setGameState('result');
   };
@@ -31,11 +52,18 @@ const App: React.FC = () => {
   return (
     <div className="relative w-full h-screen overflow-hidden bg-black">
       {/* Face Tracker Debug View */}
-      <FaceTracker />
+      <FaceTracker 
+        isActive={gameState === 'idle'} 
+        onScoreUpdate={setCurrentFaceScore} 
+      />
 
       {/* 3D Scene Background */}
       <div className="absolute inset-0 z-0">
-        <ShotPutScene power={power} onLand={handleLand} />
+        <ShotPutScene 
+            power={power} 
+            onLand={handleLand} 
+            onThrow={playThrowSound}
+        />
       </div>
 
       {/* HUD Overlay */}
@@ -45,7 +73,7 @@ const App: React.FC = () => {
         <header className="flex justify-between items-start">
           <div className="bg-black/50 backdrop-blur-md p-4 rounded-xl border border-white/20 text-white">
             <h1 className="text-2xl font-bold tracking-wider uppercase text-yellow-400">Hammer Throw Pro</h1>
-            <p className="text-xs text-gray-300">Face Tracking: <span className="text-red-400">OFFLINE</span></p>
+            <p className="text-xs text-gray-300">Face Tracking: <span className="text-green-400">ONLINE</span></p>
           </div>
           
           {/* Score / Distance Display */}

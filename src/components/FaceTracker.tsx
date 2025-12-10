@@ -3,9 +3,20 @@ import Webcam from 'react-webcam';
 import { FaceMesh, type Results } from '@mediapipe/face_mesh';
 import { Camera } from '@mediapipe/camera_utils';
 
-const FaceTracker: React.FC = () => {
+type Props = {
+  onScoreUpdate?: (score: number) => void;
+  isActive: boolean;
+};
+
+const FaceTracker: React.FC<Props> = ({ onScoreUpdate, isActive }) => {
   const webcamRef = useRef<Webcam>(null);
   const [debugInfo, setDebugInfo] = useState<string>('Initializing...');
+  const isActiveRef = useRef(isActive);
+
+  // Update ref when prop changes to use in closure
+  useEffect(() => {
+    isActiveRef.current = isActive;
+  }, [isActive]);
 
   // 距離計算用のヘルパー関数
   const calculateDistance = (p1: { x: number, y: number }, p2: { x: number, y: number }) => {
@@ -48,31 +59,48 @@ const FaceTracker: React.FC = () => {
         // 顔の大きさ（高さ）で正規化して、カメラとの距離による誤差を減らす
         const faceHeight = calculateDistance(faceTop, faceBottom);
 
-        // 口の開き具合
+        // 口の開き具合 (0.0 ~ 0.5 くらい)
         const mouthOpen = calculateDistance(topLip, bottomLip) / faceHeight;
 
-        // 目の開き具合（左右平均）
+        // 目の開き具合 (0.0 ~ 0.04 くらい)
         const leftEyeOpen = calculateDistance(leftEyeTop, leftEyeBottom) / faceHeight;
         const rightEyeOpen = calculateDistance(rightEyeTop, rightEyeBottom) / faceHeight;
         const eyeOpen = (leftEyeOpen + rightEyeOpen) / 2;
 
+        // スコア計算 (0.0 ~ 1.0 に正規化)
+        // 口: 0.05以上で開き始め、0.3でMAXとする
+        const mouthScore = Math.min(Math.max((mouthOpen - 0.05) / 0.25, 0), 1);
+        
+        // 目: 0.05以上で開き始め、0.10でMAXとする (極限までカッ開く)
+        // ユーザー希望: Start 0.05, Max 0.10
+        const eyeScore = Math.min(Math.max((eyeOpen - 0.05) / 0.05, 0), 1);
+
+        // 総合スコア (口重視)
+        const totalScore = (mouthScore * 0.7) + (eyeScore * 0.3);
+
+        if (onScoreUpdate) {
+            onScoreUpdate(totalScore);
+        }
+
         // ログ出力（数値を見やすく整形）
         const info = `
-Mouth Open: ${mouthOpen.toFixed(4)}
-Eye Open:   ${eyeOpen.toFixed(4)}
+Mouth: ${mouthOpen.toFixed(3)} -> Score: ${(mouthScore * 100).toFixed(0)}%
+Eye:   ${eyeOpen.toFixed(3)} -> Score: ${(eyeScore * 100).toFixed(0)}%
+Total: ${(totalScore * 100).toFixed(0)}%
         `.trim();
         
         setDebugInfo(info);
-        // console.log(info); // コンソールがうるさくなるので一旦コメントアウト
       } else {
         setDebugInfo('Face not detected');
+        if (onScoreUpdate) onScoreUpdate(0);
       }
     });
 
     if (webcamRef.current && webcamRef.current.video) {
       const camera = new Camera(webcamRef.current.video, {
         onFrame: async () => {
-          if (webcamRef.current?.video) {
+          // isActiveRef.current が true の時だけ処理する
+          if (webcamRef.current?.video && isActiveRef.current) {
             await faceMesh.send({ image: webcamRef.current.video });
           }
         },
@@ -83,9 +111,10 @@ Eye Open:   ${eyeOpen.toFixed(4)}
     }
   }, []);
 
+  // 非アクティブ時は表示を薄くするなどのUI調整
   return (
-    <div className="absolute top-0 left-0 bg-black/80 text-white p-4 rounded m-4 z-50 font-mono text-sm pointer-events-auto">
-      <h3 className="font-bold mb-2">Face Tracker Debug</h3>
+    <div className={`absolute top-0 left-0 bg-black/80 text-white p-4 rounded m-4 z-50 font-mono text-sm pointer-events-auto transition-opacity duration-300 ${isActive ? 'opacity-100' : 'opacity-30'}`}>
+      <h3 className="font-bold mb-2">Face Tracker {isActive ? '(Active)' : '(Paused)'}</h3>
       <div className="mb-4">
         <Webcam
           ref={webcamRef}
