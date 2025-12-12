@@ -12,12 +12,27 @@ const FaceTracker: React.FC<Props> = ({ onScoreUpdate, isActive }) => {
   const webcamRef = useRef<Webcam>(null);
   // const [debugInfo, setDebugInfo] = useState<string>('Initializing...'); // Removed in favor of metrics
   const [metrics, setMetrics] = useState({ mouth: 0, eye: 0, total: 0 });
+  const [snapshot, setSnapshot] = useState<string | null>(null);
   const isActiveRef = useRef(isActive);
 
   // Update ref when prop changes to use in closure
   useEffect(() => {
     isActiveRef.current = isActive;
   }, [isActive]);
+
+  // Snapshot Logic
+  useEffect(() => {
+    if (!isActive && !snapshot) {
+        // Capture snapshot when becoming inactive (Throwing)
+        if (webcamRef.current) {
+            const imageSrc = webcamRef.current.getScreenshot();
+            if (imageSrc) setSnapshot(imageSrc);
+        }
+    } else if (isActive && snapshot) {
+        // Reset snapshot when becoming active again (Reset)
+        setSnapshot(null);
+    }
+  }, [isActive, snapshot]);
 
   // 距離計算用のヘルパー関数
   const calculateDistance = (p1: { x: number, y: number }, p2: { x: number, y: number }) => {
@@ -112,7 +127,7 @@ const FaceTracker: React.FC<Props> = ({ onScoreUpdate, isActive }) => {
   }, []);
 
   return (
-    <div className={`absolute top-4 left-4 z-50 transition-all duration-500 ${isActive ? 'opacity-100 translate-x-0' : 'opacity-40 -translate-x-4 scale-90 origin-top-left'}`}>
+    <div className={`absolute top-4 left-4 z-50 transition-all duration-500 ${isActive || snapshot ? 'opacity-100 translate-x-0' : 'opacity-40 -translate-x-4 scale-90 origin-top-left'}`}>
         {/* Main Container */}
         <div className="relative bg-slate-900/90 border-2 border-yellow-500/50 rounded-xl p-3 shadow-[0_0_20px_rgba(234,179,8,0.2)] backdrop-blur-sm w-[280px] overflow-hidden">
             
@@ -122,7 +137,7 @@ const FaceTracker: React.FC<Props> = ({ onScoreUpdate, isActive }) => {
                     <div className={`w-3 h-3 rounded-full shadow-[0_0_10px_currentColor] ${isActive ? 'bg-green-500 text-green-500 animate-pulse' : 'bg-red-500 text-red-500'}`}></div>
                     <span className="text-xs font-black text-white tracking-widest italic">FACE SYSTEM</span>
                 </div>
-                <span className="text-[10px] text-yellow-500 font-mono opacity-70">REC ●</span>
+                <span className="text-[10px] text-yellow-500 font-mono opacity-70">{isActive ? 'REC ●' : 'LOCKED'}</span>
             </div>
 
             {/* Camera View */}
@@ -132,7 +147,26 @@ const FaceTracker: React.FC<Props> = ({ onScoreUpdate, isActive }) => {
                     className="w-full h-full object-cover opacity-80"
                     style={{ transform: "scaleX(-1)" }}
                     videoConstraints={{ width: 320, height: 240 }}
+                    screenshotFormat="image/jpeg"
                 />
+                
+                {/* Snapshot Overlay */}
+                {snapshot && (
+                    <div className="absolute inset-0 z-10">
+                        <img 
+                            src={snapshot} 
+                            alt="Face Snapshot" 
+                            className="w-full h-full object-cover"
+                            style={{ transform: "scaleX(-1)" }} 
+                        />
+                        {/* Freeze Effect Overlay */}
+                        <div className="absolute inset-0 bg-white/10 animate-pulse mix-blend-overlay"></div>
+                        <div className="absolute top-2 left-2 bg-red-600 text-white text-[10px] font-black px-2 py-0.5 rounded animate-pulse shadow-lg shadow-red-600/50">
+                            FREEZE FRAME
+                        </div>
+                    </div>
+                )}
+
                 {/* Overlay Grid */}
                 <div className="absolute inset-0 bg-[linear-gradient(rgba(0,255,255,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(0,255,255,0.05)_1px,transparent_1px)] bg-[size:20px_20px] pointer-events-none"></div>
                 
@@ -145,9 +179,11 @@ const FaceTracker: React.FC<Props> = ({ onScoreUpdate, isActive }) => {
                 </div>
                 
                 {/* Scanning Text */}
-                <div className="absolute top-2 right-2 text-[10px] text-cyan-400 font-mono animate-pulse bg-black/50 px-1 rounded">
-                    SCANNING...
-                </div>
+                {!snapshot && (
+                    <div className="absolute top-2 right-2 text-[10px] text-cyan-400 font-mono animate-pulse bg-black/50 px-1 rounded">
+                        SCANNING...
+                    </div>
+                )}
             </div>
 
             {/* Metrics */}
