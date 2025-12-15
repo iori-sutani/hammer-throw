@@ -132,6 +132,20 @@ const FaceTracker: React.FC<Props> = ({ onScoreUpdate, isActive }) => {
         ? 'top-[40%] left-1/2 -translate-x-1/2 -translate-y-1/2 scale-125 opacity-100' 
         : 'top-4 left-4 translate-x-0 translate-y-0 scale-90 origin-top-left ' + (snapshot ? 'opacity-100' : 'opacity-40')
     }`}>
+        {/* Cut-in Effect (High Score) */}
+        {isActive && metrics.total > 70 && (
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] pointer-events-none z-[60]">
+                <div className="relative flex flex-col items-center justify-center">
+                    <div className="absolute inset-0 bg-red-500/30 blur-2xl rounded-full mix-blend-screen animate-pulse"></div>
+                    <h2 className="relative text-6xl font-black text-transparent bg-clip-text bg-gradient-to-b from-yellow-300 to-red-500 italic tracking-tighter drop-shadow-[0_5px_5px_rgba(0,0,0,0.8)] rotate-[-5deg] animate-[bounce_0.2s_infinite]"
+                        style={{ filter: 'drop-shadow(0 0 10px rgba(255,0,0,0.5))' }}>
+                        OVERDRIVE!!
+                    </h2>
+                    <div className="absolute -inset-10 border-y-4 border-yellow-400/30 rotate-[-5deg] animate-ping"></div>
+                </div>
+            </div>
+        )}
+
         {/* Main Container */}
         <div className="relative bg-slate-900/90 border-2 border-yellow-500/50 rounded-xl p-3 shadow-[0_0_20px_rgba(234,179,8,0.2)] backdrop-blur-sm w-[280px] overflow-hidden">
             
