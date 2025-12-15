@@ -127,7 +127,11 @@ const FaceTracker: React.FC<Props> = ({ onScoreUpdate, isActive }) => {
   }, []);
 
   return (
-    <div className={`absolute top-4 left-4 z-50 transition-all duration-500 ${isActive || snapshot ? 'opacity-100 translate-x-0' : 'opacity-40 -translate-x-4 scale-90 origin-top-left'}`}>
+    <div className={`absolute z-50 transition-all duration-700 ease-in-out ${
+      isActive 
+        ? 'top-[40%] left-1/2 -translate-x-1/2 -translate-y-1/2 scale-125 opacity-100' 
+        : 'top-4 left-4 translate-x-0 translate-y-0 scale-90 origin-top-left ' + (snapshot ? 'opacity-100' : 'opacity-40')
+    }`}>
         {/* Main Container */}
         <div className="relative bg-slate-900/90 border-2 border-yellow-500/50 rounded-xl p-3 shadow-[0_0_20px_rgba(234,179,8,0.2)] backdrop-blur-sm w-[280px] overflow-hidden">
             
