@@ -14,6 +14,7 @@ const FaceTracker: React.FC<Props> = ({ onScoreUpdate, isActive }) => {
   const [metrics, setMetrics] = useState({ mouth: 0, eye: 0, total: 0 });
   const [snapshot, setSnapshot] = useState<string | null>(null);
   const isActiveRef = useRef(isActive);
+  const frameCountRef = useRef(0);
 
   // Update ref when prop changes to use in closure
   useEffect(() => {
@@ -48,7 +49,7 @@ const FaceTracker: React.FC<Props> = ({ onScoreUpdate, isActive }) => {
 
     faceMesh.setOptions({
       maxNumFaces: 1,
-      refineLandmarks: true,
+      refineLandmarks: false, // Disabled for better performance
       minDetectionConfidence: 0.5,
       minTrackingConfidence: 0.5,
     });
@@ -111,19 +112,35 @@ const FaceTracker: React.FC<Props> = ({ onScoreUpdate, isActive }) => {
       }
     });
 
+    let camera: Camera | null = null;
+
     if (webcamRef.current && webcamRef.current.video) {
-      const camera = new Camera(webcamRef.current.video, {
+      camera = new Camera(webcamRef.current.video, {
         onFrame: async () => {
+          // Frame skipping: Process every 2nd frame for better performance
+          frameCountRef.current++;
+          if (frameCountRef.current % 2 !== 0) {
+            return;
+          }
+
           // isActiveRef.current が true の時だけ処理する
           if (webcamRef.current?.video && isActiveRef.current) {
             await faceMesh.send({ image: webcamRef.current.video });
           }
         },
-        width: 640,
-        height: 480,
+        width: 320,
+        height: 240,
       });
       camera.start();
     }
+
+    // Cleanup function to stop camera and free resources
+    return () => {
+      if (camera) {
+        camera.stop();
+      }
+      faceMesh.close();
+    };
   }, []);
 
   return (
