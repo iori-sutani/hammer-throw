@@ -49,7 +49,7 @@ const FaceTracker: React.FC<Props> = ({ onScoreUpdate, isActive }) => {
 
     faceMesh.setOptions({
       maxNumFaces: 1,
-      refineLandmarks: false, // Disabled for better performance
+      refineLandmarks: true, // Disabled for better performance
       minDetectionConfidence: 0.5,
       minTrackingConfidence: 0.5,
     });
