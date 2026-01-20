@@ -10,14 +10,14 @@ export default defineConfig([
   {
     files: ['**/*.{ts,tsx}'],
     extends: [
-      js.configs.recommended,
-      tseslint.configs.recommended,
-      reactHooks.configs.flat.recommended,
-      reactRefresh.configs.vite,
+      js.configs.recommended, // ESLint 標準ルール
+      tseslint.configs.recommended, // TypeScript ESLint 標準ルール (any禁止など)
+      reactHooks.configs.flat.recommended, // useEffectの依存配列チェックなど
+      reactRefresh.configs.vite, // HMR時にコンポーネントの状態を保持するためのルール
     ],
     languageOptions: {
-      ecmaVersion: 2020,
-      globals: globals.browser,
+      ecmaVersion: 2020, // ECMAScriptのバージョン設定
+      globals: globals.browser, // ブラウザ環境のグローバル変数を許可
     },
   },
 ])
